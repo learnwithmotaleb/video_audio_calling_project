@@ -1,0 +1,16 @@
+# API keys come from the LIVEKIT_KEYS environment variable, and the node IP
+# from --node-ip. Both are set in docker-compose.yml. Never put secrets here.
+port: 7880
+
+rtc:
+  tcp_port: 7881
+  udp_port: 7882
+  use_external_ip: false
+
+# Rooms are created by the backend only. A valid token cannot create one.
+room:
+  auto_create: false
+
+logging:
+  level: info
+  json: true
