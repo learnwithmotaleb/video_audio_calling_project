@@ -1,0 +1,12 @@
+{$API_DOMAIN} {
+	reverse_proxy api:8000
+}
+
+{$LIVEKIT_DOMAIN} {
+	reverse_proxy livekit:7880
+}
+
+# Served only so Caddy obtains the certificate LiveKit's TURN server uses.
+{$TURN_DOMAIN} {
+	respond 404
+}

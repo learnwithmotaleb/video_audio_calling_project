@@ -1,0 +1,64 @@
+# Production overrides. Use with:
+# docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+services:
+  api:
+    ports: !reset []
+
+  postgres:
+    ports: !reset []
+
+  redis:
+    ports: !reset []
+
+  livekit:
+    command: !override ["--bind", "0.0.0.0"]
+    environment:
+      LIVEKIT_CONFIG: |
+        port: 7880
+        rtc:
+          tcp_port: 7881
+          udp_port: 7882
+          use_external_ip: true
+        room:
+          auto_create: false
+        turn:
+          enabled: true
+          domain: ${TURN_DOMAIN:?set TURN_DOMAIN in .env}
+          udp_port: 3478
+          tls_port: 5349
+          relay_range_start: 30000
+          relay_range_end: 30100
+          cert_file: /caddy/caddy/certificates/acme-v02.api.letsencrypt.org-directory/${TURN_DOMAIN}/${TURN_DOMAIN}.crt
+          key_file: /caddy/caddy/certificates/acme-v02.api.letsencrypt.org-directory/${TURN_DOMAIN}/${TURN_DOMAIN}.key
+        logging:
+          level: info
+          json: true
+    # Port 7880 stays private: clients reach it through Caddy over wss://.
+    ports: !override
+      - "7881:7881"
+      - "7882:7882/udp"
+      - "3478:3478/udp"
+      - "5349:5349"
+      - "30000-30100:30000-30100/udp"
+    volumes: !override
+      - caddy_data:/caddy:ro
+    depends_on:
+      - caddy
+
+  caddy:
+    image: caddy:2.11-alpine
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN in .env}
+      LIVEKIT_DOMAIN: ${LIVEKIT_DOMAIN:?set LIVEKIT_DOMAIN in .env}
+      TURN_DOMAIN: ${TURN_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
